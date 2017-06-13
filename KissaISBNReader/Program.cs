@@ -38,9 +38,9 @@ namespace KissaISBNReader {
 
           foreach (Match match in matches) {
             var isbn = match.Groups["ISBN"].Value;
+            var bookTitle = $"{isbn} not found!";
 
             if (!titleDictionary.ContainsKey(isbn)) {
-              var bookTitle = $"{isbn} not found!";
               try {
 
                 //HtmlDocument document = web.Load($"http://isbndb.com/search/all?query={isbn}");
@@ -62,11 +62,13 @@ namespace KissaISBNReader {
               }
               titleDictionary.Add(isbn, bookTitle);
               countdictionary.Add(isbn, 1);
-              Console.WriteLine($"line {lineCounter}: {bookTitle}");
             }
             else {
               countdictionary[isbn] = countdictionary[isbn] + 1;
+              bookTitle = titleDictionary[isbn];
             }
+
+            Console.WriteLine($"line {lineCounter++}: {bookTitle}");
           }
         }
 
