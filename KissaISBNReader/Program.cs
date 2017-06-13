@@ -17,7 +17,7 @@ namespace KissaISBNReader {
       Regex IsbnRegex = new Regex(@"(?<ISBN>\d+) (?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2})");
       Dictionary<string, int> countdictionary = new Dictionary<string, int>();
       Dictionary<string, string> titleDictionary = new Dictionary<string, string>();
-
+      readmode mode = readmode.conmode;
 
       if (args.Length > 0) {
         // Filepath has been provided as argument
@@ -25,48 +25,33 @@ namespace KissaISBNReader {
       }
 
       if (args.Length > 1) {
-        // another regex??
+        mode = args[1].ToLower().Contains("sparql") ? readmode.sparqlmode : readmode.conmode;
+      }
+
+      if (args.Length > 2) {
+        resultPath = args[2];
       }
 
       using (StreamWriter resultWriter = new StreamWriter(resultPath, false)) {
         using (StreamReader fileReader = new StreamReader(filePath)) {
           string contents = fileReader.ReadToEnd();
+          if (mode == readmode.sparqlmode) {
+            IsbnRegex = new Regex(@"\>http://opendata.mangakissa.nl/collection/nodes#LOC=(?<location>.*?)&amp;DATTIME=(?<date>\d+?)&amp;ISBN=(?<ISBN>\d+)\<");
+          }
+          else {
+            IsbnRegex = new Regex(@"(?<ISBN>\d+) (?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2})");
+          }
+
           resultWriter.WriteLine("Title|Count");
           var matches = IsbnRegex.Matches(contents);
-        
+
           int lineCounter = 0;
 
           foreach (Match match in matches) {
             var isbn = match.Groups["ISBN"].Value;
-            var bookTitle = $"{isbn} not found!";
-
-            if (!titleDictionary.ContainsKey(isbn)) {
-              try {
-
-                //HtmlDocument document = web.Load($"http://isbndb.com/search/all?query={isbn}");
-                //var result = document.DocumentNode.SelectSingleNode("//div[@class='bookSnippetBasic']/h1[@itemprop='name']");
-
-                //HtmlDocument document = web.Load($"https://isbnsearch.org/isbn/{isbn}");
-                //var result = document.DocumentNode.SelectSingleNode("//div[@class='bookinfo']/h1");
-                HtmlWeb web = new HtmlWeb();
-                HtmlDocument document = web.Load($"https://www.bookfinder.com/search/?isbn={isbn}&mode=advanced&st=sr&ac=qr");
-                var result = document.DocumentNode.SelectSingleNode("//div[@class='attributes']/div/a//span[@itemprop='name']");
 
 
-                if (result != null) {
-                  bookTitle = result.InnerText.Trim();
-                }
-              }
-              catch (Exception) {
-                Console.WriteLine($"Error ocurred on line {lineCounter}");
-              }
-              titleDictionary.Add(isbn, bookTitle);
-              countdictionary.Add(isbn, 1);
-            }
-            else {
-              countdictionary[isbn] = countdictionary[isbn] + 1;
-              bookTitle = titleDictionary[isbn];
-            }
+            var bookTitle = getBookTitle(countdictionary, titleDictionary, lineCounter, isbn);
 
             Console.WriteLine($"line {lineCounter++}: {bookTitle}");
           }
@@ -80,5 +65,43 @@ namespace KissaISBNReader {
       Console.WriteLine("Press any key to continue...");
       Console.ReadKey();
     }
+
+    private static string getBookTitle(Dictionary<string, int> countdictionary, Dictionary<string, string> titleDictionary, int lineCounter, string isbn) {
+      var bookTitle = $"{isbn} not found!";
+      if (!titleDictionary.ContainsKey(isbn)) {
+        try {
+
+          //HtmlDocument document = web.Load($"http://isbndb.com/search/all?query={isbn}");
+          //var result = document.DocumentNode.SelectSingleNode("//div[@class='bookSnippetBasic']/h1[@itemprop='name']");
+
+          //HtmlDocument document = web.Load($"https://isbnsearch.org/isbn/{isbn}");
+          //var result = document.DocumentNode.SelectSingleNode("//div[@class='bookinfo']/h1");
+          HtmlWeb web = new HtmlWeb();
+          HtmlDocument document = web.Load($"https://www.bookfinder.com/search/?isbn={isbn}&mode=advanced&st=sr&ac=qr");
+          var result = document.DocumentNode.SelectSingleNode("//div[@class='attributes']/div/a//span[@itemprop='name']");
+
+
+          if (result != null) {
+            bookTitle = result.InnerText.Trim();
+          }
+        }
+        catch (Exception) {
+          Console.WriteLine($"Error ocurred on line {lineCounter}");
+        }
+        titleDictionary.Add(isbn, bookTitle);
+        countdictionary.Add(isbn, 1);
+      }
+      else {
+        countdictionary[isbn] = countdictionary[isbn] + 1;
+        bookTitle = titleDictionary[isbn];
+      }
+
+      return bookTitle;
+    }
+  }
+
+  enum readmode {
+    conmode,
+    sparqlmode
   }
 }
