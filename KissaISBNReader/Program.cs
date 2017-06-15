@@ -46,14 +46,19 @@ namespace KissaISBNReader {
           var matches = IsbnRegex.Matches(contents);
 
           int lineCounter = 0;
-
+          var previousIsbn = "";
           foreach (Match match in matches) {
             var isbn = match.Groups["ISBN"].Value;
 
+            // Con users are idios and keep scanning the same book? 
+            if (isbn == previousIsbn && mode == readmode.conmode) {
+              Console.WriteLine($"line {lineCounter++}: Doubles previous entry");
+            }
+            else {
+              var bookTitle = getBookTitle(countdictionary, titleDictionary, lineCounter, isbn);
 
-            var bookTitle = getBookTitle(countdictionary, titleDictionary, lineCounter, isbn);
-
-            Console.WriteLine($"line {lineCounter++}: {bookTitle}");
+              Console.WriteLine($"line {lineCounter++}: {bookTitle}");
+            }
           }
         }
 
