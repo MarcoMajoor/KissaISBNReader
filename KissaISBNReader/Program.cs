@@ -56,7 +56,7 @@ namespace KissaISBNReader {
             }
             else {
               var bookTitle = getBookTitle(countdictionary, titleDictionary, lineCounter, isbn);
-
+              previousIsbn = isbn;
               Console.WriteLine($"line {lineCounter++}: {bookTitle}");
             }
           }
@@ -75,19 +75,21 @@ namespace KissaISBNReader {
       var bookTitle = $"{isbn} not found!";
       if (!titleDictionary.ContainsKey(isbn)) {
         try {
-
+          HtmlWeb web = new HtmlWeb();
           //HtmlDocument document = web.Load($"http://isbndb.com/search/all?query={isbn}");
           //var result = document.DocumentNode.SelectSingleNode("//div[@class='bookSnippetBasic']/h1[@itemprop='name']");
 
           //HtmlDocument document = web.Load($"https://isbnsearch.org/isbn/{isbn}");
           //var result = document.DocumentNode.SelectSingleNode("//div[@class='bookinfo']/h1");
-          HtmlWeb web = new HtmlWeb();
-          HtmlDocument document = web.Load($"https://www.bookfinder.com/search/?isbn={isbn}&mode=advanced&st=sr&ac=qr");
-          var result = document.DocumentNode.SelectSingleNode("//div[@class='attributes']/div/a//span[@itemprop='name']");
 
+          //HtmlDocument document = web.Load($"https://www.bookfinder.com/search/?isbn={isbn}&mode=advanced&st=sr&ac=qr");
+          //var result = document.DocumentNode.SelectSingleNode("//div[@class='attributes']/div/a//span[@itemprop='name']");
 
+          HtmlDocument document = web.Load(
+            $@"https://collectie.mangakissa.nl/sparql?default-graph-uri=&query=SELECT+distinct+%3Fz%0D%0AWHERE%0D%0A%7B+%3Fx+%3Chttp%3A%2F%2Fopendata.mangakissa.nl%2Fcollection%2Fproperties%23hasISBN%3E+%22{isbn}%22+.%0D%0A++%3Fx+%3Chttp%3A%2F%2Fopendata.mangakissa.nl%2Fcollection%2Fproperties%23hasTitle%3E+%3Fz%0D%0A+%7D&format=text%2Fhtml&timeout=0&debug=on");
+          var result = document.DocumentNode.SelectSingleNode("//td");
           if (result != null) {
-            bookTitle = result.InnerText.Trim();
+            bookTitle = WebUtility.HtmlDecode(result.InnerText.Trim().Trim('"').Trim());
           }
         }
         catch (Exception) {
