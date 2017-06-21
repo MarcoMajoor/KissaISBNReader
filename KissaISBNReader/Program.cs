@@ -25,7 +25,14 @@ namespace KissaISBNReader {
       }
 
       if (args.Length > 1) {
-        mode = args[1].ToLower().Contains("sparql") ? readmode.sparqlmode : readmode.conmode;
+        mode = readmode.conmode;
+
+        if (args[1].ToLower().Contains("sparql")) {
+          mode = readmode.sparqlmode;
+        }
+        else if (args[1].ToLower().Contains("literal")) {
+          mode = readmode.literal;
+        }
       }
 
       if (args.Length > 2) {
@@ -37,6 +44,9 @@ namespace KissaISBNReader {
           string contents = fileReader.ReadToEnd();
           if (mode == readmode.sparqlmode) {
             IsbnRegex = new Regex(@"\>http://opendata.mangakissa.nl/collection/nodes#LOC=(?<location>.*?)&amp;DATTIME=(?<date>\d+?)&amp;ISBN=(?<ISBN>\d+)\<");
+          }
+          else if (mode == readmode.literal) {
+            IsbnRegex = new Regex(@"\>(?<ISBN>\d+)\<");
           }
           else {
             IsbnRegex = new Regex(@"(?<ISBN>\d+) (?<date>\d{4}-\d{2}-\d{2}) (?<time>\d{2}:\d{2}:\d{2})");
@@ -109,6 +119,7 @@ namespace KissaISBNReader {
 
   enum readmode {
     conmode,
-    sparqlmode
+    sparqlmode,
+    literal
   }
 }
